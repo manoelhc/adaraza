@@ -1,0 +1,136 @@
+packer {
+  required_plugins {
+    qemu = {
+      version = ">= 1.0.0"
+      source  = "github.com/hashicorp/qemu"
+    }
+  }
+}
+
+variable "freebsd_version" {
+  type    = string
+  default = "14.1"
+}
+
+variable "freebsd_arch" {
+  type    = string
+  default = "amd64"
+}
+
+variable "iso_url" {
+  type    = string
+  default = "https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/14.1/FreeBSD-14.1-RELEASE-amd64-disc1.iso"
+}
+
+variable "iso_checksum" {
+  type    = string
+  default = "sha256:0d32e6f1b8b7b0c9c6d3c8c4f4f2e1f1e3e1c0f5c0d8f0f0f0f0f0f0f0f0f0f0"
+}
+
+variable "disk_size" {
+  type    = string
+  default = "40960"
+}
+
+variable "memory" {
+  type    = string
+  default = "4096"
+}
+
+variable "cpus" {
+  type    = string
+  default = "2"
+}
+
+variable "output_directory" {
+  type    = string
+  default = "output-freebsd-wayland"
+}
+
+source "qemu" "freebsd-wayland" {
+  vm_name          = "freebsd-wayland-${var.freebsd_version}"
+  iso_url          = var.iso_url
+  iso_checksum     = var.iso_checksum
+  output_directory = var.output_directory
+  disk_size        = var.disk_size
+  memory           = var.memory
+  cpus             = var.cpus
+  accelerator      = "kvm"
+  format           = "qcow2"
+  net_device       = "virtio-net"
+  disk_interface   = "virtio"
+  headless         = false
+
+  # Boot command for FreeBSD installer
+  boot_wait = "10s"
+  boot_command = [
+    "<enter><wait10><wait10><wait10>",
+    "<enter><wait>",
+    "<enter><wait>",
+    "<down><down><down><down><down><down><down><down><down><down><enter><wait>",
+    "<enter><wait>",
+    "<enter><wait>",
+    "<wait10><wait10><wait10><wait10><wait10>",
+    "<enter><wait>",
+    "root<enter><wait>",
+    "mkdir -p /root/.ssh<enter><wait>",
+    "echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config<enter><wait>",
+    "echo 'root:packer' | chpasswd<enter><wait>",
+    "service sshd restart<enter><wait>"
+  ]
+
+  ssh_username           = "root"
+  ssh_password           = "packer"
+  ssh_timeout            = "30m"
+  ssh_handshake_attempts = 100
+
+  shutdown_command = "shutdown -p now"
+  shutdown_timeout = "5m"
+}
+
+build {
+  sources = ["source.qemu.freebsd-wayland"]
+
+  # Update system and install base packages
+  provisioner "shell" {
+    inline = [
+      "pkg update -f",
+      "pkg install -y sudo bash"
+    ]
+  }
+
+  # Install build dependencies and development tools
+  provisioner "shell" {
+    script = "scripts/install-build-deps.sh"
+  }
+
+  # Install and configure Wayland
+  provisioner "shell" {
+    script = "scripts/install-wayland.sh"
+  }
+
+  # Install Hyprland compositor
+  provisioner "shell" {
+    script = "scripts/install-hyprland.sh"
+  }
+
+  # Install uutils (Rust coreutils)
+  provisioner "shell" {
+    script = "scripts/install-uutils.sh"
+  }
+
+  # Install Ghostty terminal
+  provisioner "shell" {
+    script = "scripts/install-ghostty.sh"
+  }
+
+  # Install and configure zsh
+  provisioner "shell" {
+    script = "scripts/install-zsh.sh"
+  }
+
+  # Final system cleanup and configuration
+  provisioner "shell" {
+    script = "scripts/cleanup.sh"
+  }
+}
