@@ -63,3 +63,8 @@ crash.log
 *.vmdk
 *.vdi
 *.box
+
+# Packer variable files (user-specific)
+*.auto.pkrvars.hcl
+*.pkrvars.hcl
+!*.pkrvars.hcl.example

@@ -24,7 +24,10 @@ variable "iso_url" {
 
 variable "iso_checksum" {
   type    = string
-  default = "sha256:0d32e6f1b8b7b0c9c6d3c8c4f4f2e1f1e3e1c0f5c0d8f0f0f0f0f0f0f0f0f0f0"
+  # To get the actual checksum, visit:
+  # https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/14.1/CHECKSUM.SHA256-FreeBSD-14.1-RELEASE-amd64
+  # Or use "none" to skip checksum verification (not recommended for production)
+  default = "sha256:3462bc1e46c79fdc0042e5e593cdfa7d86ecc4455a9c514fe5a0bdd51fb2e8e7"
 }
 
 variable "disk_size" {
