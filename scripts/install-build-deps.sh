@@ -28,7 +28,7 @@ pkg install -y \
 # Install additional development libraries
 pkg install -y \
     python3 \
-    py39-pip \
+    py311-pip \
     go
 
 echo "==> Build dependencies installed successfully"

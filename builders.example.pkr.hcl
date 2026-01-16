@@ -34,7 +34,7 @@ source "virtualbox-iso" "freebsd-wayland" {
     "root<enter><wait>",
     "mkdir -p /root/.ssh<enter><wait>",
     "echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config<enter><wait>",
-    "echo 'root:packer' | chpasswd<enter><wait>",
+    "echo 'packer' | pw usermod root -h 0<enter><wait>",
     "service sshd restart<enter><wait>"
   ]
   
@@ -83,7 +83,7 @@ source "vmware-iso" "freebsd-wayland" {
     "root<enter><wait>",
     "mkdir -p /root/.ssh<enter><wait>",
     "echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config<enter><wait>",
-    "echo 'root:packer' | chpasswd<enter><wait>",
+    "echo 'packer' | pw usermod root -h 0<enter><wait>",
     "service sshd restart<enter><wait>"
   ]
   
