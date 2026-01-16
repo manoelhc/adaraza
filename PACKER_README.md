@@ -92,6 +92,29 @@ Available variables:
 
 The default configuration uses FreeBSD 14.1. To use a different version, update the `iso_url` and `iso_checksum` variables.
 
+## Security
+
+### Password Security
+
+For security reasons, the built image has the root password locked by default. On **first login**, you will be prompted to set a new secure password. This ensures that:
+- No default password exists in the distributed image
+- Each installation has a unique password
+- The system remains secure out of the box
+
+**During the build process**, a temporary password (`packer`) is used only for automated provisioning and is locked before the image is finalized.
+
+### SSH Access
+
+- SSH server is enabled by default
+- Root login via SSH is permitted (you may want to disable this in production)
+- It's recommended to use SSH keys instead of password authentication
+
+To disable root SSH login after first boot:
+```bash
+echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+service sshd restart
+```
+
 ## Usage
 
 ### Running the built image
@@ -112,8 +135,10 @@ qemu-system-x86_64 \
 
 ### Login
 
-- **Username:** root
-- **Password:** packer (or configured during build)
+On first boot:
+1. **Username:** root
+2. **You will be prompted to set a new password** for security
+3. After setting the password, Hyprland will auto-start on tty0
 
 ### Starting Hyprland
 

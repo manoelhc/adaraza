@@ -29,14 +29,26 @@ else
     
     # Create symlinks for individual utilities
     cd /usr/local/bin/uutils
-    for util in base32 base64 basename cat chmod chown cp cut date dd df dirname \
-                echo env expand expr false fold head id join link ln ls mkdir \
-                mktemp mv nl od paste printenv printf pwd readlink realpath rm \
-                rmdir seq sha1sum sha224sum sha256sum sha384sum sha512sum sleep \
-                sort split sum sync tail tee test touch tr true truncate uname \
-                uniq unlink wc whoami yes; do
-        ./coreutils link $util
-    done
+    
+    # Get list of available utilities dynamically
+    available_utils=$(./coreutils --list 2>/dev/null || echo "")
+    
+    if [ -n "$available_utils" ]; then
+        # Use the list from coreutils itself
+        for util in $available_utils; do
+            ./coreutils link $util 2>/dev/null || true
+        done
+    else
+        # Fallback to common utilities if --list is not available
+        for util in base32 base64 basename cat chmod chown cp cut date dd df dirname \
+                    echo env expand expr false fold head id join link ln ls mkdir \
+                    mktemp mv nl od paste printenv printf pwd readlink realpath rm \
+                    rmdir seq sha1sum sha224sum sha256sum sha384sum sha512sum sleep \
+                    sort split sum sync tail tee test touch tr true truncate uname \
+                    uniq unlink wc whoami yes; do
+            ./coreutils link $util 2>/dev/null || true
+        done
+    fi
     
     # Add to PATH (optional - users can choose to use uutils or BSD coreutils)
     echo 'export PATH="/usr/local/bin/uutils:$PATH"' >> /etc/profile
