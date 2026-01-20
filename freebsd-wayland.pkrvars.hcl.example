@@ -1,0 +1,37 @@
+# FreeBSD Wayland ARM64 Image Variables for Raspberry Pi
+# Copy this file to freebsd-wayland.auto.pkrvars.hcl and customize as needed
+
+# FreeBSD version to build
+# freebsd_version = "14.1"
+
+# Architecture (aarch64 for ARM64/Raspberry Pi)
+# freebsd_arch = "aarch64"
+
+# Custom ISO URL (optional)
+# iso_url = "https://download.freebsd.org/releases/arm64/aarch64/ISO-IMAGES/14.1/FreeBSD-14.1-RELEASE-arm64-aarch64-disc1.iso"
+
+# ISO checksum (IMPORTANT: Update this before building!)
+# Get from: https://download.freebsd.org/releases/arm64/aarch64/ISO-IMAGES/14.1/CHECKSUM.SHA256-FreeBSD-14.1-RELEASE-arm64-aarch64
+# iso_checksum = "sha256:YOUR_ACTUAL_CHECKSUM_HERE"
+
+# Disk size in MB (default: 40GB)
+# disk_size = "40960"
+
+# Memory in MB (default: 4GB)
+# memory = "4096"
+
+# Number of CPUs (default: 2)
+# cpus = "2"
+
+# Output directory for the built image
+# output_directory = "output-freebsd-wayland"
+
+# KVM acceleration (use "kvm" on ARM64 hosts, "tcg" on x86_64 hosts)
+# use_kvm = "tcg"
+
+# EFI firmware path (adjust for your system)
+# Common paths:
+# - Ubuntu/Debian: /usr/share/qemu-efi-aarch64/QEMU_EFI.fd
+# - Fedora/RHEL: /usr/share/edk2/aarch64/QEMU_EFI-pflash.raw
+# - macOS (Homebrew): /opt/homebrew/share/qemu/edk2-aarch64-code.fd
+# efi_firmware_path = "/usr/share/qemu-efi-aarch64/QEMU_EFI.fd"

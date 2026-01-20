@@ -53,3 +53,18 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Packer build artifacts
+output-*/
+packer_cache/
+packer-manifest.json
+crash.log
+*.qcow2
+*.vmdk
+*.vdi
+*.box
+
+# Packer variable files (user-specific)
+*.auto.pkrvars.hcl
+*.pkrvars.hcl
+!*.pkrvars.hcl.example
