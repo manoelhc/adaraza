@@ -69,16 +69,16 @@ Error: Failed to initialize build 'qemu.freebsd-wayland': kvm acceleration not a
 **Note:** KVM acceleration for ARM64 is only available on ARM64 host machines. On x86_64 hosts, the build will use TCG emulation (slower but functional).
 
 **Solutions:**
-1. **On x86_64 hosts:** Accept slower build times with TCG emulation (remove or comment out `accelerator = "kvm"` in Packer config)
+1. **On x86_64 hosts:** Use TCG emulation (set `use_kvm = "tcg"` in Packer config or variables)
 2. **On ARM64 Linux hosts:** Ensure KVM is enabled
    ```bash
    lsmod | grep kvm
    sudo modprobe kvm
    ```
-   accelerator = "whpx"
    
-   # Or disable acceleration (slower)
-   accelerator = "none"
+   Then set in your build command:
+   ```bash
+   packer build -var 'use_kvm=kvm' freebsd-wayland.pkr.hcl
    ```
 
 ### Issue: Insufficient disk space

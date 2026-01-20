@@ -171,8 +171,6 @@ sync
 ```
 
 3. Insert SD card into Raspberry Pi and boot
-  -net user
-```
 
 ### Login
 

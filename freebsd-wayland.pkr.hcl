@@ -24,10 +24,12 @@ variable "iso_url" {
 
 variable "iso_checksum" {
   type = string
+  # IMPORTANT: Update this with the actual checksum before building!
   # To get the actual checksum, visit:
   # https://download.freebsd.org/releases/arm64/aarch64/ISO-IMAGES/14.1/CHECKSUM.SHA256-FreeBSD-14.1-RELEASE-arm64-aarch64
   # Or use "none" to skip checksum verification (not recommended for production)
-  default = "sha256:e5e1f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8f7e8"
+  # Current value is a placeholder - replace before building
+  default = "none"
 }
 
 variable "disk_size" {
@@ -50,6 +52,13 @@ variable "output_directory" {
   default = "output-freebsd-wayland"
 }
 
+variable "use_kvm" {
+  type = string
+  # KVM acceleration only works on ARM64 host machines
+  # Set to "none" or "tcg" for x86_64 hosts emulating ARM64
+  default = "tcg"
+}
+
 source "qemu" "freebsd-wayland" {
   vm_name          = "freebsd-wayland-${var.freebsd_version}-${var.freebsd_arch}"
   iso_url          = var.iso_url
@@ -58,7 +67,7 @@ source "qemu" "freebsd-wayland" {
   disk_size        = var.disk_size
   memory           = var.memory
   cpus             = var.cpus
-  accelerator      = "kvm"
+  accelerator      = var.use_kvm
   format           = "qcow2"
   net_device       = "virtio-net"
   disk_interface   = "virtio"
