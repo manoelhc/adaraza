@@ -2,21 +2,24 @@
 
 ## Project Summary
 
-Adaraza is an experimental FreeBSD-based operating system distribution with a modern Wayland desktop environment. This repository contains an automated Packer build system that creates a fully functional, bootable FreeBSD image with Hyprland compositor and modern tools.
+Adaraza is an experimental FreeBSD ARM64-based operating system distribution with a modern Wayland desktop environment, designed for **Raspberry Pi 4/5**. This repository contains an automated Packer build system that creates a fully functional, bootable FreeBSD ARM64 image with Hyprland compositor and modern tools.
 
 ## Architecture
 
 ### Build System
 - **Platform**: Packer (HashiCorp)
-- **Virtualization**: QEMU (with KVM acceleration support)
-- **Base OS**: FreeBSD 14.1
-- **Format**: QCOW2 disk image
+- **Virtualization**: QEMU ARM64 (qemu-system-aarch64) with KVM acceleration support
+- **Base OS**: FreeBSD 14.1 ARM64
+- **Target Hardware**: Raspberry Pi 4 Model B / Raspberry Pi 5
+- **CPU Emulation**: ARM Cortex-A72 (compatible with Raspberry Pi 4)
+- **Format**: QCOW2 disk image (convertible to raw for SD card deployment)
 
 ### Core Components
 
 #### 1. FreeBSD Base System
-- FreeBSD 14.1 RELEASE
+- FreeBSD 14.1 RELEASE for ARM64 (aarch64)
 - Stable and secure Unix-like OS
+- Optimized for ARM architecture
 - Full documentation at https://www.freebsd.org/
 
 #### 2. Wayland Display Server
@@ -154,10 +157,17 @@ The build process follows these stages:
 
 ### Packer Variables
 - `freebsd_version`: FreeBSD version (default: 14.1)
+- `freebsd_arch`: Architecture (default: aarch64)
 - `disk_size`: Disk size in MB (default: 40960)
 - `memory`: RAM in MB (default: 4096)
 - `cpus`: Number of CPUs (default: 2)
 - `output_directory`: Output path
+
+### QEMU ARM64 Settings
+- Machine type: `virt` (ARM virtual machine)
+- CPU: `cortex-a72` (Raspberry Pi 4 compatible)
+- BIOS: UEFI firmware for ARM64 (`QEMU_EFI.fd`)
+- Devices: virtio-gpu-pci, usb-ehci, virtio-net-pci
 
 ### Runtime Configuration Files
 - `/etc/rc.conf`: System services
@@ -172,32 +182,50 @@ The build process follows these stages:
 ### Build Host
 - Linux, macOS, or Windows
 - Packer >= 1.8.0
-- QEMU >= 5.0
+- QEMU >= 5.0 with ARM64 support (qemu-system-aarch64)
+- QEMU EFI firmware for ARM64 (qemu-efi-aarch64 package)
 - 50GB free disk space
 - 4GB+ RAM
 - Internet connection
+- Note: ARM64 emulation on x86_64 hosts is slower but functional
 
-### Runtime (Guest)
-- 4GB RAM (minimum)
-- 2 CPU cores (minimum)
+### Runtime (Guest - QEMU Emulation)
+- 4GB RAM (minimum, 8GB recommended)
+- 2 CPU cores (minimum, 4 recommended for better performance)
 - 40GB disk space
-- VT-x/AMD-V virtualization support
-- OpenGL support (for graphics acceleration)
+- Virtio device support
+
+### Runtime (Raspberry Pi Hardware)
+- Raspberry Pi 4 Model B (2GB/4GB/8GB RAM variants)
+- Raspberry Pi 5 (4GB/8GB RAM variants)
+- MicroSD card (64GB+ recommended) or USB drive
+- HDMI display
+- USB keyboard and mouse
+- Power supply (official recommended)
+- Optional: Ethernet cable (Wi-Fi requires additional setup)
 
 ## Performance Considerations
 
 ### Build Time
 - Download time depends on internet speed
-- FreeBSD installation: ~10 minutes
-- Package installation: ~20-30 minutes
-- Source builds (Hyprland, uutils, Ghostty): ~30-60 minutes
-- Total: ~1-2 hours
+- FreeBSD ARM64 installation: ~15 minutes (slightly slower than x86_64)
+- Package installation: ~30-40 minutes (ARM builds take longer)
+- Source builds (Hyprland, uutils, Ghostty): ~60-90 minutes (ARM compilation is slower)
+- Total: ~2-3 hours on typical hardware
 
 ### Runtime Performance
-- KVM acceleration recommended (Linux hosts)
-- HVF acceleration for macOS
+- KVM acceleration recommended for ARM hosts (Linux on ARM64)
+- TCG emulation on x86_64 hosts (slower but functional for testing)
 - Virtio drivers for better I/O performance
-- GPU passthrough for better graphics (optional)
+- On actual Raspberry Pi 4: Good performance with hardware acceleration
+- On actual Raspberry Pi 5: Excellent performance with improved GPU
+
+### Raspberry Pi Deployment
+- Image can be converted from QCOW2 to raw format for SD card
+- Boot from SD card or USB drive
+- Supports Raspberry Pi 4 Model B (all RAM variants: 2GB, 4GB, 8GB)
+- Supports Raspberry Pi 5 (all RAM variants: 4GB, 8GB)
+- Requires UEFI firmware on Raspberry Pi for FreeBSD boot
 
 ## Extending the System
 
@@ -221,8 +249,17 @@ The build process follows these stages:
 ### Current Limitations
 - Single-user setup (root only)
 - No automated testing
-- Limited hardware support testing
-- Some components built from source (longer build time)
+- Limited hardware support testing on actual Raspberry Pi hardware
+- Some components built from source (longer build time on ARM)
+- ARM64 emulation on x86_64 hosts is slower (use for development/testing only)
+- Raspberry Pi specific features (GPIO, etc.) not yet configured
+
+### Raspberry Pi Specific Notes
+- Tested on QEMU ARM64 emulation with Cortex-A72 CPU
+- Real hardware testing on Raspberry Pi 4/5 recommended
+- May require UEFI firmware update on Raspberry Pi for boot
+- VideoCore GPU driver support in development
+- Wi-Fi and Bluetooth drivers may need additional configuration
 
 ### Future Improvements
 - Multi-user support

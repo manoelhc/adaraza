@@ -1,27 +1,35 @@
-# Adaraza FreeBSD Wayland Image Builder
+# Adaraza FreeBSD Wayland Image Builder for Raspberry Pi
 
-This repository contains a Packer configuration to build a FreeBSD image with Wayland, Hyprland, and modern tools.
+This repository contains a Packer configuration to build a FreeBSD ARM64 image with Wayland, Hyprland, and modern tools, designed for **Raspberry Pi 4/5**.
 
 ## Features
 
 The generated image includes:
 
-- **FreeBSD 14.1** - Stable and secure Unix-like operating system
+- **FreeBSD 14.1 ARM64** - Stable and secure Unix-like operating system for ARM architecture
 - **Wayland** - Modern display server protocol
 - **Hyprland** - Dynamic tiling Wayland compositor
 - **uutils** - Rust implementation of coreutils (GNU coreutils alternative)
 - **Ghostty** - Modern, fast terminal emulator
 - **zsh** - Powerful shell with oh-my-zsh
 
+## Target Hardware
+
+- **Primary**: Raspberry Pi 4 Model B / Raspberry Pi 5
+- **Architecture**: ARM64 (aarch64)
+- **CPU**: ARM Cortex-A72 (Pi 4) / Cortex-A76 (Pi 5)
+- **Emulation**: QEMU virt machine with Cortex-A72 CPU
+
 ## Prerequisites
 
 To build this image, you need:
 
 - [Packer](https://www.packer.io/) (>= 1.8.0)
-- [QEMU](https://www.qemu.org/) (for virtualization)
+- [QEMU](https://www.qemu.org/) with ARM64 support (qemu-system-aarch64)
+- QEMU EFI firmware for ARM64 (qemu-efi-aarch64)
 - At least 40GB of free disk space
 - 4GB of RAM allocated to the VM
-- Linux host with KVM support (or modify the configuration for other platforms)
+- Linux host with KVM support recommended (or modify the configuration for other platforms)
 
 ## Quick Start
 
@@ -37,11 +45,11 @@ sudo apt-get update && sudo apt-get install packer
 brew install packer
 ```
 
-### 2. Install QEMU
+### 2. Install QEMU with ARM64 support
 
 ```bash
 # On Ubuntu/Debian
-sudo apt-get install qemu-system-x86 qemu-utils
+sudo apt-get install qemu-system-arm qemu-efi-aarch64 qemu-utils
 
 # On macOS
 brew install qemu
@@ -82,7 +90,7 @@ packer build \
 
 Available variables:
 - `freebsd_version` - FreeBSD version (default: 14.1)
-- `freebsd_arch` - Architecture (default: amd64)
+- `freebsd_arch` - Architecture (default: aarch64)
 - `disk_size` - Disk size in MB (default: 40960 = 40GB)
 - `memory` - RAM in MB (default: 4096 = 4GB)
 - `cpus` - Number of CPUs (default: 2)
@@ -90,7 +98,9 @@ Available variables:
 
 ### FreeBSD ISO
 
-The default configuration uses FreeBSD 14.1. To use a different version, update the `iso_url` and `iso_checksum` variables.
+The default configuration uses FreeBSD 14.1 ARM64. To use a different version, update the `iso_url` and `iso_checksum` variables.
+
+**Note**: The ISO URL points to the ARM64 (aarch64) version specifically for Raspberry Pi and ARM-based systems.
 
 ## Security
 
@@ -117,19 +127,50 @@ service sshd restart
 
 ## Usage
 
-### Running the built image
+### Running the built image (Raspberry Pi emulation)
 
-After building, you can run the image with QEMU:
+After building, you can run the image with QEMU ARM64:
 
 ```bash
-qemu-system-x86_64 \
-  -enable-kvm \
+qemu-system-aarch64 \
+  -M virt \
+  -cpu cortex-a72 \
   -m 4096 \
   -smp 2 \
-  -drive file=output-freebsd-wayland/freebsd-wayland-14.1,format=qcow2 \
-  -display gtk,gl=on \
-  -vga virtio \
-  -net nic,model=virtio \
+  -drive file=output-freebsd-wayland/freebsd-wayland-14.1-aarch64,format=qcow2,if=virtio \
+  -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd \
+  -device virtio-gpu-pci \
+  -device usb-ehci \
+  -device usb-kbd \
+  -device usb-mouse \
+  -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+  -device virtio-net-pci,netdev=net0 \
+  -display gtk,gl=on
+```
+
+Or simply use the Makefile:
+
+```bash
+make run  # Run with graphical display
+make run-vnc  # Run with VNC (headless)
+```
+
+### Deploying to Raspberry Pi
+
+To deploy the image to an actual Raspberry Pi 4/5:
+
+1. Convert the QCOW2 image to a raw image:
+```bash
+qemu-img convert -f qcow2 -O raw output-freebsd-wayland/freebsd-wayland-14.1-aarch64 raspberrypi.img
+```
+
+2. Write to SD card (replace /dev/sdX with your SD card device):
+```bash
+sudo dd if=raspberrypi.img of=/dev/sdX bs=4M status=progress
+sync
+```
+
+3. Insert SD card into Raspberry Pi and boot
   -net user
 ```
 

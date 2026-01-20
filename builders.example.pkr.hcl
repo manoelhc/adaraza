@@ -1,17 +1,27 @@
-# Alternative Builder Configuration Examples
-# This file shows how to use different builders instead of QEMU
+# Alternative Builder Configuration Examples for ARM64
+# This file shows how to use different builders instead of QEMU for ARM64/Raspberry Pi
+
+# Note: Most virtualization platforms have limited ARM64 support
+# QEMU is the recommended option for ARM64 emulation and Raspberry Pi development
 
 # Uncomment and modify the sections below to use alternative builders
 
 # =============================================================================
-# VirtualBox Builder
+# QEMU ARM64 Builder (Default - Recommended)
 # =============================================================================
-# Requires VirtualBox to be installed
-# Uncomment the source block below and comment out the QEMU source in freebsd-wayland.pkr.hcl
+# This is the default configuration in freebsd-wayland.pkr.hcl
+# Supports ARM64 emulation with Cortex-A72 CPU (Raspberry Pi 4 compatible)
+
+# =============================================================================
+# VirtualBox Builder (Limited ARM64 Support)
+# =============================================================================
+# Note: VirtualBox has very limited ARM64 guest support
+# Not recommended for FreeBSD ARM64 - use QEMU instead
+# Only uncomment if you have VirtualBox 7.0+ with ARM64 support
 
 /*
 source "virtualbox-iso" "freebsd-wayland" {
-  vm_name              = "freebsd-wayland-${var.freebsd_version}"
+  vm_name              = "freebsd-wayland-${var.freebsd_version}-${var.freebsd_arch}"
   iso_url              = var.iso_url
   iso_checksum         = var.iso_checksum
   output_directory     = var.output_directory
@@ -21,9 +31,10 @@ source "virtualbox-iso" "freebsd-wayland" {
   guest_os_type        = "FreeBSD_64"
   headless             = false
   
-  boot_wait = "10s"
+  boot_wait = "30s"
   boot_command = [
-    "<enter><wait10><wait10><wait10>",
+    "<wait10><wait10><wait10>",
+    "<enter><wait10><wait10>",
     "<enter><wait>",
     "<enter><wait>",
     "<down><down><down><down><down><down><down><down><down><down><enter><wait>",
@@ -103,29 +114,43 @@ source "vmware-iso" "freebsd-wayland" {
 */
 
 # =============================================================================
-# Notes on Builder Selection
+# Notes on Builder Selection for ARM64
 # =============================================================================
 # 
-# QEMU:
-#   - Best for Linux hosts with KVM support
-#   - Fastest build times on Linux
-#   - Cross-platform support (with slower performance without KVM)
-#   - Output: QCOW2 image format
+# QEMU (Recommended):
+#   - Best option for ARM64 emulation
+#   - Supports ARM Cortex-A72 CPU emulation (Raspberry Pi 4/5 compatible)
+#   - Works on x86_64 and ARM64 host machines
+#   - KVM acceleration available on ARM64 Linux hosts
+#   - TCG emulation on x86_64 hosts (slower but functional)
+#   - Output: QCOW2 image format (convertible to raw for SD card)
+#   - Most mature ARM64 virtualization solution
 #
 # VirtualBox:
-#   - Good cross-platform support (Windows, macOS, Linux)
-#   - Free and open source
-#   - Easy to use for testing
-#   - Output: OVF/OVA format
+#   - Limited ARM64 guest support (experimental in VirtualBox 7.0+)
+#   - Not recommended for FreeBSD ARM64 development
+#   - Better to use QEMU instead
 #
 # VMware:
-#   - Professional/enterprise environments
-#   - Best performance on Windows/macOS
-#   - Requires commercial license
-#   - Output: VMX/VMDK format
+#   - Very limited ARM64 guest support
+#   - Not recommended for ARM64 workloads
+#   - Use QEMU instead
+#
+# For Raspberry Pi Development:
+# 1. Use QEMU for initial development and testing
+# 2. Convert QCOW2 to raw image for SD card deployment
+# 3. Test on actual Raspberry Pi hardware
+# 4. QEMU emulation is slower than real hardware but accurate
 #
 # To use a different builder:
-# 1. Install the required software (VirtualBox or VMware)
-# 2. Copy the appropriate source block above
-# 3. Replace the QEMU source in freebsd-wayland.pkr.hcl
-# 4. Run packer init and packer build as normal
+# 1. Check if the builder supports ARM64 guests
+# 2. Install the required software
+# 3. Copy the appropriate source block above
+# 4. Replace the QEMU source in freebsd-wayland.pkr.hcl
+# 5. Run packer init and packer build as normal
+#
+# Performance Notes:
+# - ARM64 emulation on x86_64: ~10-20x slower than native
+# - ARM64 with KVM on ARM64 host: Near-native performance
+# - Actual Raspberry Pi 4: Good performance for daily use
+# - Actual Raspberry Pi 5: Excellent performance

@@ -18,12 +18,13 @@ pkg install -y \
     xwayland \
     xorg-server
 
-# Install graphics drivers
+# Install graphics drivers for ARM64/Raspberry Pi
 pkg install -y \
     drm-kmod \
     gpu-firmware-kmod
 
-# Load kernel modules
-echo 'kld_list="i915kms"' >> /etc/rc.conf
+# Load kernel modules for ARM64 graphics
+# Note: For Raspberry Pi, we use generic DRM instead of Intel i915
+echo 'kld_list="evdev"' >> /etc/rc.conf
 
 echo "==> Wayland installed successfully"

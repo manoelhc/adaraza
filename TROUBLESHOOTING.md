@@ -1,12 +1,13 @@
-# Troubleshooting Guide for Adaraza FreeBSD Image Builder
+# Troubleshooting Guide for Adaraza FreeBSD ARM64 Image Builder
 
-This guide helps resolve common issues when building and running the Adaraza FreeBSD image.
+This guide helps resolve common issues when building and running the Adaraza FreeBSD ARM64 image for Raspberry Pi.
 
 ## Table of Contents
 1. [Build Issues](#build-issues)
 2. [Runtime Issues](#runtime-issues)
 3. [Packer Issues](#packer-issues)
-4. [FreeBSD Specific Issues](#freebsd-specific-issues)
+4. [FreeBSD ARM64 Specific Issues](#freebsd-arm64-specific-issues)
+5. [Raspberry Pi Deployment Issues](#raspberry-pi-deployment-issues)
 
 ## Build Issues
 
@@ -22,32 +23,58 @@ The following plugins are required, but not installed:
 packer init freebsd-wayland.pkr.hcl
 ```
 
-### Issue: QEMU/KVM not available
+### Issue: QEMU ARM64 not available
+```
+Error: qemu-system-aarch64: command not found
+```
+
+**Solutions:**
+1. **On Ubuntu/Debian:**
+   ```bash
+   sudo apt-get install qemu-system-arm qemu-efi-aarch64
+   ```
+
+2. **On macOS:**
+   ```bash
+   brew install qemu
+   ```
+
+3. **On Fedora/RHEL:**
+   ```bash
+   sudo dnf install qemu-system-aarch64 edk2-aarch64
+   ```
+
+### Issue: QEMU EFI firmware not found
+```
+Error: Could not open '/usr/share/qemu-efi-aarch64/QEMU_EFI.fd'
+```
+
+**Solutions:**
+1. **On Ubuntu/Debian:**
+   ```bash
+   sudo apt-get install qemu-efi-aarch64
+   ```
+
+2. **On other systems:** Download UEFI firmware manually
+   ```bash
+   # Download from QEMU repository or package manager
+   # Update path in freebsd-wayland.pkr.hcl to match your system
+   ```
+
+### Issue: KVM not available for ARM
 ```
 Error: Failed to initialize build 'qemu.freebsd-wayland': kvm acceleration not available
 ```
 
-**Solutions:**
-1. **On Linux:** Ensure KVM is enabled
-   ```bash
-   # Check if KVM is available
-   lsmod | grep kvm
-   
-   # If not, load the module
-   sudo modprobe kvm
-   sudo modprobe kvm_intel  # or kvm_amd for AMD processors
-   
-   # Add your user to the kvm group
-   sudo usermod -aG kvm $USER
-   # Log out and back in for changes to take effect
-   ```
+**Note:** KVM acceleration for ARM64 is only available on ARM64 host machines. On x86_64 hosts, the build will use TCG emulation (slower but functional).
 
-2. **On macOS/Windows:** Change accelerator in freebsd-wayland.pkr.hcl
-   ```hcl
-   # For macOS
-   accelerator = "hvf"
-   
-   # For Windows
+**Solutions:**
+1. **On x86_64 hosts:** Accept slower build times with TCG emulation (remove or comment out `accelerator = "kvm"` in Packer config)
+2. **On ARM64 Linux hosts:** Ensure KVM is enabled
+   ```bash
+   lsmod | grep kvm
+   sudo modprobe kvm
+   ```
    accelerator = "whpx"
    
    # Or disable acceleration (slower)
@@ -337,7 +364,7 @@ If you encounter issues not covered here:
    packer build -var 'memory=8192' -var 'cpus=4' freebsd-wayland.pkr.hcl
    ```
 4. Use SSD for output directory
-5. Enable KVM acceleration (Linux only)
+5. Enable KVM acceleration (ARM64 Linux hosts only)
 
 ### Reduce image size
 1. Clean up after installation (already done in cleanup.sh)
@@ -346,3 +373,130 @@ If you encounter issues not covered here:
    ```bash
    qemu-img convert -c -O qcow2 input.qcow2 output-compressed.qcow2
    ```
+
+## Raspberry Pi Deployment Issues
+
+### Issue: Image won't boot on Raspberry Pi
+**Solutions:**
+1. Ensure you have UEFI firmware installed on Raspberry Pi:
+   - Download and install Raspberry Pi UEFI firmware
+   - Available at: https://github.com/pftf/RPi4
+   - Extract to SD card boot partition before copying FreeBSD image
+
+2. Check SD card is properly written:
+   ```bash
+   # Verify the image was written correctly
+   sudo dd if=/dev/sdX of=verify.img bs=4M count=10
+   # Compare with original
+   ```
+
+3. Use correct boot order in UEFI settings
+
+### Issue: No video output on Raspberry Pi
+**Solutions:**
+1. Check HDMI cable and display
+2. Try different HDMI port (Raspberry Pi 4 has 2 micro-HDMI ports)
+3. Ensure VideoCore drivers are loaded:
+   ```bash
+   # In FreeBSD on Pi
+   kldload vc4
+   ```
+4. Edit /boot/loader.conf to add:
+   ```
+   vc4_load="YES"
+   ```
+
+### Issue: Wi-Fi not working on Raspberry Pi
+**Solution:**
+Wi-Fi requires additional driver configuration:
+```bash
+# Install wireless drivers
+pkg install rpi-firmware wpa_supplicant
+
+# Configure wpa_supplicant
+wpa_passphrase "SSID" "password" >> /etc/wpa_supplicant.conf
+
+# Enable in /etc/rc.conf
+echo 'wlans_brcmfmac0="wlan0"' >> /etc/rc.conf
+echo 'ifconfig_wlan0="WPA DHCP"' >> /etc/rc.conf
+```
+
+### Issue: Bluetooth not working on Raspberry Pi
+**Solution:**
+Bluetooth support requires additional setup:
+```bash
+# Install Bluetooth stack
+pkg install bluetooth
+
+# Load kernel module
+kldload ng_ubt
+
+# Add to /boot/loader.conf
+echo 'ng_ubt_load="YES"' >> /boot/loader.conf
+```
+
+### Issue: GPIO not accessible
+**Solution:**
+GPIO support on FreeBSD ARM64 is limited:
+```bash
+# Install GPIO utilities
+pkg install libgpio
+
+# Check available GPIO pins
+gpioctl -l
+```
+
+### Issue: SD card write performance is slow
+**Solutions:**
+1. Use a high-quality, fast SD card (Class 10, UHS-I or better)
+2. Consider using USB 3.0 SSD instead of SD card for better performance
+3. Enable write caching (use with caution):
+   ```bash
+   sysctl vfs.write_behind=1
+   ```
+
+### Issue: ARM64 emulation is too slow for development
+**Solutions:**
+1. Build on ARM64 host machine if available (much faster)
+2. Use cross-compilation for packages instead of building on emulated system
+3. Reduce memory and CPU allocation to what you actually need
+4. Consider using actual Raspberry Pi hardware for testing
+5. Use pre-built packages instead of building from source when possible
+
+## Common FreeBSD ARM64 Issues
+
+### Issue: Package not available for ARM64
+**Solution:**
+Some packages may not be built for ARM64 architecture:
+```bash
+# Check if package exists for arm64
+pkg search -o packagename
+
+# Build from ports if necessary
+cd /usr/ports/category/package
+make install clean
+```
+
+### Issue: Performance is worse than expected
+**Solutions:**
+1. Ensure you're running on actual hardware, not emulation
+2. Check CPU frequency scaling:
+   ```bash
+   sysctl dev.cpu | grep freq
+   ```
+3. Monitor system load:
+   ```bash
+   top
+   vmstat 1
+   ```
+4. Check for thermal throttling on Raspberry Pi (use cooling)
+
+### Issue: Converting image to raw format fails
+**Solution:**
+```bash
+# Use sparse option to save space
+qemu-img convert -f qcow2 -O raw -S 4k input.qcow2 output.img
+
+# Check conversion
+qemu-img info output.img
+```
