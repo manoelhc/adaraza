@@ -59,6 +59,16 @@ variable "use_kvm" {
   default = "tcg"
 }
 
+variable "efi_firmware_path" {
+  type = string
+  # Path to QEMU EFI firmware for ARM64
+  # Common paths:
+  # - Ubuntu/Debian: /usr/share/qemu-efi-aarch64/QEMU_EFI.fd
+  # - Fedora/RHEL: /usr/share/edk2/aarch64/QEMU_EFI-pflash.raw
+  # - macOS (Homebrew): /opt/homebrew/share/qemu/edk2-aarch64-code.fd
+  default = "/usr/share/qemu-efi-aarch64/QEMU_EFI.fd"
+}
+
 source "qemu" "freebsd-wayland" {
   vm_name          = "freebsd-wayland-${var.freebsd_version}-${var.freebsd_arch}"
   iso_url          = var.iso_url
@@ -77,7 +87,7 @@ source "qemu" "freebsd-wayland" {
   qemuargs = [
     ["-machine", "virt"],
     ["-cpu", "cortex-a72"],
-    ["-bios", "/usr/share/qemu-efi-aarch64/QEMU_EFI.fd"],
+    ["-bios", var.efi_firmware_path],
     ["-device", "virtio-gpu-pci"],
     ["-device", "usb-ehci"],
     ["-device", "usb-kbd"],
